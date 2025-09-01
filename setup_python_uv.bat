@@ -17,12 +17,12 @@ if not defined PYTHON (
         rem Prefer a recent Python 3.12 line; winget handles architecture
         winget install -e --id Python.Python.3.12 --accept-source-agreements --accept-package-agreements
         if %errorlevel% neq 0 (
-            echo [!] winget install failed. Falling back to direct download.
-            goto :install_python_direct
+        echo [!] winget install failed. Falling back to direct download.
+            call :install_python_direct
         )
     ) else (
         echo [i] winget not available. Falling back to direct download.
-        goto :install_python_direct
+        call :install_python_direct
     )
 
     rem Re-detect Python after winget install
@@ -110,4 +110,3 @@ if not defined PYTHON (
     where py >nul 2>&1 && set "PYTHON=py -3"
 )
 goto :eof
-
