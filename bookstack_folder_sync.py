@@ -136,6 +136,22 @@ def read_markdown(file_path: Path) -> str:
     return file_path.read_text(encoding="utf-8")
 
 
+def ensure_blankline_before_callouts(md_text: str) -> str:
+    """
+    Ensure there is always a blank line before a callout block
+    in Markdown using the BookStack admonition style: `> [!TYPE]`.
+    """
+    lines = md_text.splitlines()
+    out: List[str] = []
+    callout_re = re.compile(r"^\s*>\s*\[![A-Za-z]+\]")
+    for line in lines:
+        if callout_re.match(line):
+            if out and out[-1].strip() != "":
+                out.append("")
+        out.append(line)
+    return "\n".join(out)
+
+
 # --------------------- API Client ---------------------
 
 class BookStackClient:
@@ -362,6 +378,7 @@ def main():
     for _, page_title, file_path in root_pages:
         raw_md = read_markdown(file_path)
         transformed_md = inline_images(raw_md, page_dir=file_path.parent, content_root=content_root)
+        transformed_md = ensure_blankline_before_callouts(transformed_md)
 
         existing = client.find_page(book_id=book_id, chapter_id=None, name=page_title)
         if not existing:
@@ -402,6 +419,7 @@ def main():
         for _, page_title, file_path in page_items:
             raw_md = read_markdown(file_path)
             transformed_md = inline_images(raw_md, page_dir=file_path.parent, content_root=content_root)
+            transformed_md = ensure_blankline_before_callouts(transformed_md)
 
             existing = client.find_page(book_id=book_id, chapter_id=chapter["id"], name=page_title)
             if not existing:
