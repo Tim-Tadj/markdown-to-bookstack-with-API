@@ -1,3 +1,6 @@
 requests
 python-dotenv
 markdown
+beautifulsoup4
+markdownify
+html2text
