@@ -152,6 +152,80 @@ def ensure_blankline_before_callouts(md_text: str) -> str:
     return "\n".join(out)
 
 
+def convert_callouts_to_html(md_text: str) -> str:
+    """
+    Convert callout/admonition blocks using the style:
+      > [!TYPE]
+      > content...
+
+    into a single HTML paragraph like:
+      <p class="callout type">content...</p>
+
+    This keeps callouts compact and consistent for round-trip with the
+    downloader which recognizes elements with class "callout".
+    """
+    lines = md_text.splitlines()
+    out: List[str] = []
+
+    header_re = re.compile(r"^\s*>\s*\[!([A-Za-z]+)\]\s*(.*)$")
+    quote_re = re.compile(r"^\s*>\s?(.*)$")
+
+    def type_to_class(t: str) -> str:
+        t = t.lower()
+        mapping = {
+            "success": "success",
+            "info": "info",
+            "information": "info",
+            "note": "note",
+            "warning": "warning",
+            "warn": "warning",
+            "danger": "danger",
+            "error": "danger",
+            "tip": "tip",
+        }
+        return mapping.get(t, "info")
+
+    i = 0
+    n = len(lines)
+    while i < n:
+        m = header_re.match(lines[i])
+        if not m:
+            out.append(lines[i])
+            i += 1
+            continue
+
+        ctype_raw = m.group(1)
+        trailing = m.group(2) or ""
+        body_lines: List[str] = []
+        if trailing.strip():
+            body_lines.append(trailing)
+
+        j = i + 1
+        while j < n:
+            mq = quote_re.match(lines[j])
+            if not mq:
+                break
+            # Keep even empty lines within the callout body
+            body_lines.append(mq.group(1))
+            j += 1
+
+        # Collapse body lines to plain text and escape for HTML
+        import html as _html
+        body_text = " ".join([s.strip() for s in body_lines])
+        body_text = re.sub(r"\s+", " ", body_text).strip()
+        esc_text = _html.escape(body_text)
+
+        callout_class = type_to_class(ctype_raw)
+        html_block = f"<p class=\"callout {callout_class}\">{esc_text}</p>"
+        out.append(html_block)
+        # Ensure a blank line after the HTML callout for proper Markdown separation
+        out.append("")
+
+        i = j
+
+    return "\n".join(out)
+
+
 # --------------------- API Client ---------------------
 
 class BookStackClient:
@@ -379,6 +453,7 @@ def main():
         raw_md = read_markdown(file_path)
         transformed_md = inline_images(raw_md, page_dir=file_path.parent, content_root=content_root)
         transformed_md = ensure_blankline_before_callouts(transformed_md)
+        transformed_md = convert_callouts_to_html(transformed_md)
 
         existing = client.find_page(book_id=book_id, chapter_id=None, name=page_title)
         if not existing:
@@ -420,6 +495,7 @@ def main():
             raw_md = read_markdown(file_path)
             transformed_md = inline_images(raw_md, page_dir=file_path.parent, content_root=content_root)
             transformed_md = ensure_blankline_before_callouts(transformed_md)
+            transformed_md = convert_callouts_to_html(transformed_md)
 
             existing = client.find_page(book_id=book_id, chapter_id=chapter["id"], name=page_title)
             if not existing:
