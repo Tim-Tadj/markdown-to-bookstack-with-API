@@ -13,11 +13,19 @@ This repo includes the main script `bookstack_folder_sync.py` which is env-drive
 ## Requirements
 
 - Python 3.7+
-- Recommended: create a virtualenv
-- The script will try to auto-install missing runtime packages (`requests`, `python-dotenv`, `markdown`) when needed, but installing them manually is recommended:
+- `uv` for fast dependency management
+
+First, ensure the environment is set up:
 
 ```powershell
-python -m pip install requests python-dotenv markdown
+# Install uv if not already installed
+# winget install astral-sh.uv
+
+# Sync dependencies and set up the environment
+uv sync
+
+# Run with uv (automatically manages dependencies)
+uv run bookstack_folder_sync.py
 ```
 
 ## Environment variables
@@ -110,29 +118,38 @@ Notes:
 
 ## How to run
 
-PowerShell (using `.env` or environment variables in session):
+First, sync the environment, then set your environment variables (or use a `.env` file) and run with `uv`:
 
 ```powershell
-# Option A: Use session env vars
+# Sync dependencies and set up environment
+uv sync
+
+# Set environment variables
 $env:BOOKSTACK_BASE_URL = 'https://bookstack.example.com';
 $env:BOOKSTACK_TOKEN_ID = 'your-id';
 $env:BOOKSTACK_TOKEN_SECRET = 'your-secret';
 $env:BOOKSTACK_BOOK_NAME = 'Data & Knowledge Management Guide';
-python .\bookstack_folder_sync.py
 
-# Option B: Use a custom CONTENT_DIR
+# Run with uv
+uv run bookstack_folder_sync.py
+
+# Or with custom CONTENT_DIR
 $env:CONTENT_DIR = 'G:\\path\\to\\content';
-python .\bookstack_folder_sync.py
+uv run bookstack_folder_sync.py
 ```
 
 On Unix-like shells (for reference):
 
 ```bash
+# Sync dependencies first
+uv sync
+
+# Then run with environment variables
 BOOKSTACK_BASE_URL=https://bookstack.example.com \
 BOOKSTACK_TOKEN_ID=your-id \
 BOOKSTACK_TOKEN_SECRET=your-secret \
 BOOKSTACK_BOOK_NAME='Data & Knowledge Management Guide' \
-python bookstack_folder_sync.py
+uv run bookstack_folder_sync.py
 ```
 
 ## Exit codes and common errors
@@ -145,10 +162,13 @@ If TLS verification fails, either provide `BOOKSTACK_CA_CERT` or set `BOOKSTACK_
 
 ## Troubleshooting
 
-- If the script fails due to missing Python packages, install them manually:
+- If encountering issues, ensure `uv` is properly installed:
 
 ```powershell
-python -m pip install requests python-dotenv markdown
+# Install uv if not already installed
+winget install astral-sh.uv
+# Or via pip
+pip install uv
 ```
 
 - If pages are created with unexpected titles, ensure filenames follow the 2-digit prefix convention and that the remainder of the filename is the desired title.
@@ -158,7 +178,8 @@ python -m pip install requests python-dotenv markdown
 1. Create a folder named `Data & Knowledge Management Guide` next to `bookstack_folder_sync.py`.
 2. Add `01 Introduction.md`, `02 SharePoint.md`, etc. Optionally create a folder `10 Appendix` and add `01 Extra.md` inside it.
 3. Create a `.env` with the required API variables or export them in your shell.
-4. Run the script.
+4. Set up the environment: `uv sync`
+5. Run the script: `uv run bookstack_folder_sync.py`
 
 ## License
 
