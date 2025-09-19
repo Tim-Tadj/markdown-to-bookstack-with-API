@@ -5,6 +5,10 @@ description = "Book Api Syncing Tool"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "beautifulsoup4>=4.13.5",
+    "html2text>=2025.4.15",
+    "markdown>=3.9",
+    "markdownify>=1.2.0",
     "python-dotenv>=1.1.1",
     "requests>=2.32.5",
 ]
