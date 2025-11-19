@@ -5,3 +5,5 @@ bookstack_users_by_role.csv
 
 .venv
 uv.lock
+images/
+WireShark/

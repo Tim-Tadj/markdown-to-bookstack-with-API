@@ -101,26 +101,45 @@ def to_data_uri(path: Path) -> Optional[str]:
     b64 = base64.b64encode(data).decode("ascii")
     return f"data:{mime};base64,{b64}"
 
-def resolve_image(ref: str, page_dir: Path, content_root: Path) -> Optional[Path]:
+def resolve_image(ref: str, page_dir: Path, content_root: Path, images_dir: Optional[Path] = None) -> Optional[Path]:
     cand = (page_dir / ref).resolve()
     if cand.exists():
         return cand
     cand = (content_root / ref).resolve()
     if cand.exists():
         return cand
+    if images_dir:
+        cand = (images_dir / ref).resolve()
+        if cand.exists():
+            return cand
     return None
 
-def inline_images(markdown: str, page_dir: Path, content_root: Path) -> str:
+def inline_images(markdown: str, page_dir: Path, content_root: Path, images_dir: Optional[Path] = None) -> str:
     def _replace(m: re.Match) -> str:
         alt_text = m.group(1)
         ref = m.group(2).replace("%20", " ")
-        img_path = resolve_image(ref, page_dir, content_root)
+        img_path = resolve_image(ref, page_dir, content_root, images_dir)
         if img_path:
             data_uri = to_data_uri(img_path)
             if data_uri:
                 return f"![{alt_text}]({data_uri})"
         return m.group(0)
     return MD_IMAGE_RE.sub(_replace, markdown)
+
+OBSIDIAN_IMAGE_RE = re.compile(r'!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]')
+
+def inline_obsidian_images(markdown: str, page_dir: Path, content_root: Path, images_dir: Optional[Path] = None) -> str:
+    def _replace(m: re.Match) -> str:
+        filename = m.group(1).strip()
+        alt_text = m.group(2).strip() if m.group(2) else filename
+        
+        img_path = resolve_image(filename, page_dir, content_root, images_dir)
+        if img_path:
+            data_uri = to_data_uri(img_path)
+            if data_uri:
+                return f"![{alt_text}]({data_uri})"
+        return m.group(0)
+    return OBSIDIAN_IMAGE_RE.sub(_replace, markdown)
 
 
 # --------------------- Content helpers ---------------------
@@ -425,6 +444,7 @@ def main():
 
     # Determine content dir
     script_dir = Path(__file__).resolve().parent
+    images_dir = script_dir / "images"
     content_dir_env = os.getenv("CONTENT_DIR", "").strip()
     content_root = Path(content_dir_env).expanduser().resolve() if content_dir_env else (script_dir / book_name).resolve()
 
@@ -451,7 +471,8 @@ def main():
     priority = 1
     for _, page_title, file_path in root_pages:
         raw_md = read_markdown(file_path)
-        transformed_md = inline_images(raw_md, page_dir=file_path.parent, content_root=content_root)
+        transformed_md = inline_images(raw_md, page_dir=file_path.parent, content_root=content_root, images_dir=images_dir)
+        transformed_md = inline_obsidian_images(transformed_md, page_dir=file_path.parent, content_root=content_root, images_dir=images_dir)
         transformed_md = ensure_blankline_before_callouts(transformed_md)
         transformed_md = convert_callouts_to_html(transformed_md)
 
@@ -493,7 +514,8 @@ def main():
         page_order = 1
         for _, page_title, file_path in page_items:
             raw_md = read_markdown(file_path)
-            transformed_md = inline_images(raw_md, page_dir=file_path.parent, content_root=content_root)
+            transformed_md = inline_images(raw_md, page_dir=file_path.parent, content_root=content_root, images_dir=images_dir)
+            transformed_md = inline_obsidian_images(transformed_md, page_dir=file_path.parent, content_root=content_root, images_dir=images_dir)
             transformed_md = ensure_blankline_before_callouts(transformed_md)
             transformed_md = convert_callouts_to_html(transformed_md)
 

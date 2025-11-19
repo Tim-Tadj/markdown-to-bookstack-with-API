@@ -43,7 +43,7 @@ Optional:
 - `BOOKSTACK_INSECURE` — Set to `1`, `true`, or `yes` to disable TLS verification (suppresses warnings). Use only for trusted networks/testing.
 - `BOOKSTACK_CA_CERT` — Path to a CA cert file to use for TLS verification (overrides `BOOKSTACK_INSECURE`).
 
-The script also supports a `.env` file (via `python-dotenv`) — place it next to the script and include the same variables there.
+The script uses a `.env` file (via `python-dotenv`) — place it next to the script and include the variables there. This is the only supported way to configure the script.
 
 Example `.env`:
 
@@ -105,7 +105,12 @@ Notes:
 
 ## Image handling
 
-- Markdown image references (e.g. `![alt](images/pic.png)`) are replaced with data URIs when the referenced image exists. The script resolves image paths relative to the page file and the content root.
+- Markdown image references (e.g. `![alt](images/pic.png)`) are replaced with data URIs when the referenced image exists.
+- Obsidian-style image links (e.g. `![[image.jpg]]` or `![[image.jpg|alt text]]`) are also supported and converted to standard Markdown with data URIs.
+- The script resolves image paths in the following order:
+  1. Relative to the page file.
+  2. Relative to the content root.
+  3. In an `images` folder adjacent to the script (`bookstack_folder_sync.py`).
 - Supported image extensions: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`.
 
 Notes:
@@ -118,37 +123,13 @@ Notes:
 
 ## How to run
 
-First, sync the environment, then set your environment variables (or use a `.env` file) and run with `uv`:
+First, sync the environment, then ensure your `.env` file is set up and run with `uv`:
 
 ```powershell
 # Sync dependencies and set up environment
 uv sync
 
-# Set environment variables
-$env:BOOKSTACK_BASE_URL = 'https://bookstack.example.com';
-$env:BOOKSTACK_TOKEN_ID = 'your-id';
-$env:BOOKSTACK_TOKEN_SECRET = 'your-secret';
-$env:BOOKSTACK_BOOK_NAME = 'Data & Knowledge Management Guide';
-
 # Run with uv
-uv run bookstack_folder_sync.py
-
-# Or with custom CONTENT_DIR
-$env:CONTENT_DIR = 'G:\\path\\to\\content';
-uv run bookstack_folder_sync.py
-```
-
-On Unix-like shells (for reference):
-
-```bash
-# Sync dependencies first
-uv sync
-
-# Then run with environment variables
-BOOKSTACK_BASE_URL=https://bookstack.example.com \
-BOOKSTACK_TOKEN_ID=your-id \
-BOOKSTACK_TOKEN_SECRET=your-secret \
-BOOKSTACK_BOOK_NAME='Data & Knowledge Management Guide' \
 uv run bookstack_folder_sync.py
 ```
 
@@ -177,7 +158,7 @@ pip install uv
 
 1. Create a folder named `Data & Knowledge Management Guide` next to `bookstack_folder_sync.py`.
 2. Add `01 Introduction.md`, `02 SharePoint.md`, etc. Optionally create a folder `10 Appendix` and add `01 Extra.md` inside it.
-3. Create a `.env` with the required API variables or export them in your shell.
+3. Create a `.env` with the required API variables.
 4. Set up the environment: `uv sync`
 5. Run the script: `uv run bookstack_folder_sync.py`
 
